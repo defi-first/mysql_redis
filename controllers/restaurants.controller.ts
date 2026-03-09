@@ -2,7 +2,14 @@ import type { NextFunction, Request, Response } from "express";
 import type { Restaurant } from "../schemas/restaurant.js";
 import { initializeRedisClient } from "../utils/client.js";
 import { nanoid } from "nanoid";
-import { restaurantKeyById, reviewDetailsKeyById, reviewKeyById } from "../utils/keys.js";
+import {
+	cuisineKey,
+	cuisinesKey,
+	restaurantCuisinesKeyById,
+	restaurantKeyById,
+	reviewDetailsKeyById,
+	reviewKeyById,
+} from "../utils/keys.js";
 import { errorResponse, successResponse } from "../utils/responses.js";
 import type { Review } from "../schemas/review.js";
 
@@ -14,7 +21,16 @@ export const addRestaurant = async (req: Request, res: Response, next: NextFunct
 		const id = nanoid();
 		const restaurantKey = restaurantKeyById(id);
 		const hashData = { id, name: data.name, location: data.location };
-		const addResult = await client.hSet(restaurantKey, hashData);
+		await Promise.all([
+			...data.cuisines.map((cuisine) =>
+				Promise.all([
+					client.sAdd(cuisinesKey, cuisine),
+					client.sAdd(cuisineKey(cuisine), id),
+					client.sAdd(restaurantCuisinesKeyById(id), cuisine),
+				]),
+			),
+			client.hSet(restaurantKey, hashData),
+		]);
 		return successResponse(res, hashData, "Add new restaurant");
 	} catch (error) {
 		next(error);
@@ -27,11 +43,12 @@ export const getRestaurantById = async (req: Request, res: Response, next: NextF
 	try {
 		const client = await initializeRedisClient();
 		const restaurantKey = restaurantKeyById(restaurantId);
-		const [viewCount, restaurant] = await Promise.all([
+		const [viewCount, restaurant, cuisines] = await Promise.all([
 			client.hIncrBy(restaurantKey, "viewCount", 1),
 			client.hGetAll(restaurantKey),
+			client.sMembers(restaurantCuisinesKeyById(restaurantId)),
 		]);
-		return successResponse(res, restaurant);
+		return successResponse(res, { ...restaurant, cuisines });
 	} catch (error) {
 		next(error);
 	}
