@@ -6,12 +6,15 @@ import {
 	addReview,
 	deleteReviewById,
 	getRestaurantById,
+	getRestaurants,
 	getReviews,
 } from "../controllers/restaurants.controller.js";
 import { checkRestaurantExists } from "../middlewares/checkRestaurantId.js";
 import { ReviewSchema } from "../schemas/review.js";
 
 const router = express.Router();
+
+router.get("/", getRestaurants);
 
 router.post("/", validate(RestaurantSchema), addRestaurant);
 
