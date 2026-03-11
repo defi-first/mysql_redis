@@ -10,6 +10,7 @@ import {
 	restaurantsByRatingKey,
 	reviewDetailsKeyById,
 	reviewKeyById,
+	weatherKeyById,
 } from "../utils/keys.js";
 import { errorResponse, successResponse } from "../utils/responses.js";
 import type { Review } from "../schemas/review.js";
@@ -54,6 +55,37 @@ export const addRestaurant = async (req: Request, res: Response, next: NextFunct
 			}),
 		]);
 		return successResponse(res, hashData, "Add new restaurant");
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const getWeather = async (
+	req: Request<{ restaurantId: string }>,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const { restaurantId } = req.params;
+		const client = await initializeRedisClient();
+		const weatherKey = weatherKeyById(restaurantId);
+		const cachedWeather = await client.get(weatherKey);
+		if (cachedWeather) {
+			return successResponse(res, JSON.parse(cachedWeather));
+		}
+		const restaurantKey = restaurantKeyById(restaurantId);
+		const coords = await client.hGet(restaurantKey, "location");
+		if (!coords) {
+			return errorResponse(res, 404, "Could not find location");
+		}
+		const [lng, lat] = coords.split(",");
+		const apiResponse = await fetch("MOCKAPI");
+		if (apiResponse.status === 200) {
+			const json = await apiResponse.json();
+			await client.set(weatherKey, JSON.stringify(json));
+			return successResponse(res, json);
+		}
+		return errorResponse(res, 404, "Could not find location");
 	} catch (error) {
 		next(error);
 	}
