@@ -10,6 +10,7 @@ import {
 	getRestaurantDetail,
 	getRestaurants,
 	getReviews,
+	getSearch,
 	getWeather,
 } from "../controllers/restaurants.controller.js";
 import { checkRestaurantExists } from "../middlewares/checkRestaurantId.js";
@@ -39,5 +40,7 @@ router.get("/:restaurantId/details", checkRestaurantExists, getRestaurantDetail)
 router.get("/:restaurantId/reviews", checkRestaurantExists, getReviews);
 
 router.delete("/:restaurantId/reviews/:reviewId", checkRestaurantExists, deleteReviewById);
+
+router.get("/search", getSearch);
 
 export default router;

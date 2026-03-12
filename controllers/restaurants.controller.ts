@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import {
 	cuisineKey,
 	cuisinesKey,
+	indexKey,
 	restaurantCuisinesKeyById,
 	restaurantDetailsKeyById,
 	restaurantKeyById,
@@ -229,6 +230,17 @@ export const deleteReviewById = async (
 		}
 
 		return successResponse(res, reviewId, "Review removed");
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const getSearch = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { q } = req.query;
+		const client = await initializeRedisClient();
+		const results = await client.ft.search(indexKey, `@name:${q}`);
+		return successResponse(res, results);
 	} catch (error) {
 		next(error);
 	}
