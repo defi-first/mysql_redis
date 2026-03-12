@@ -1,11 +1,13 @@
 import express from "express";
 import { validate } from "../middlewares/validate.js";
-import { RestaurantSchema } from "../schemas/restaurant.js";
+import { RestaurantDetailsSchema, RestaurantSchema } from "../schemas/restaurant.js";
 import {
 	addRestaurant,
+	addRestaurantDetail,
 	addReview,
 	deleteReviewById,
 	getRestaurantById,
+	getRestaurantDetail,
 	getRestaurants,
 	getReviews,
 	getWeather,
@@ -24,6 +26,15 @@ router.get("/", checkRestaurantExists, getWeather);
 router.get("/:restaurantId", checkRestaurantExists, getRestaurantById);
 
 router.post("/:restaurantId/reviews", checkRestaurantExists, validate(ReviewSchema), addReview);
+
+router.post(
+	"/:restaurantId/details",
+	checkRestaurantExists,
+	validate(RestaurantDetailsSchema),
+	addRestaurantDetail,
+);
+
+router.get("/:restaurantId/details", checkRestaurantExists, getRestaurantDetail);
 
 router.get("/:restaurantId/reviews", checkRestaurantExists, getReviews);
 

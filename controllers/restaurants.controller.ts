@@ -6,6 +6,7 @@ import {
 	cuisineKey,
 	cuisinesKey,
 	restaurantCuisinesKeyById,
+	restaurantDetailsKeyById,
 	restaurantKeyById,
 	restaurantsByRatingKey,
 	reviewDetailsKeyById,
@@ -91,6 +92,39 @@ export const getWeather = async (
 	}
 };
 
+export const addRestaurantDetail = async (
+	req: Request<{ restaurantId: string }>,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const { restaurantId } = req.params;
+		const data = req.body as any;
+		const client = await initializeRedisClient();
+		const restaurantDetailsKey = restaurantDetailsKeyById(restaurantId);
+		await client.json.set(restaurantDetailsKey, ".", data);
+		return successResponse(res, {}, "Restaurant Details added successfully");
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const getRestaurantDetail = async (
+	req: Request<{ restaurantId: string }>,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const { restaurantId } = req.params;
+		const data = req.body as any;
+		const client = await initializeRedisClient();
+		const restaurantDetailsKey = restaurantDetailsKeyById(restaurantId);
+		const detail = await client.json.get(restaurantDetailsKey);
+		return successResponse(res, detail);
+	} catch (error) {
+		next(error);
+	}
+};
 export const getRestaurantById = async (req: Request, res: Response, next: NextFunction) => {
 	const restaurantId = req.params.restaurantId as string;
 
