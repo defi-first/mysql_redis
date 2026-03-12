@@ -3,6 +3,7 @@ import type { Restaurant } from "../schemas/restaurant.js";
 import { initializeRedisClient } from "../utils/client.js";
 import { nanoid } from "nanoid";
 import {
+	bloomKey,
 	cuisineKey,
 	cuisinesKey,
 	indexKey,
@@ -41,6 +42,13 @@ export const addRestaurant = async (req: Request, res: Response, next: NextFunct
 		const client = await initializeRedisClient();
 		const id = nanoid();
 		const restaurantKey = restaurantKeyById(id);
+
+		const bloomString = `${data.name}:${data.location}`;
+		const seenBefore = await client.bf.exists(bloomKey, bloomString);
+		if (seenBefore) {
+			return errorResponse(res, 409, "Restaurant already exists");
+		}
+
 		const hashData = { id, name: data.name, location: data.location };
 		await Promise.all([
 			...data.cuisines.map((cuisine) =>
@@ -55,6 +63,7 @@ export const addRestaurant = async (req: Request, res: Response, next: NextFunct
 				score: 0,
 				value: id,
 			}),
+			client.bf.add(bloomKey, bloomString),
 		]);
 		return successResponse(res, hashData, "Add new restaurant");
 	} catch (error) {
